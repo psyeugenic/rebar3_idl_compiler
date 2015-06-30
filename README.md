@@ -43,6 +43,8 @@ is used.
 
 
 Example:
+
+
     {idl_opts, [{'Wall', true}]}.
     {idl_files, [
                  {file, "idl/system.idl", [{outdir, "generated"}]},

@@ -53,8 +53,8 @@ init(State) ->
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 rebar3_idl_compiler"}, % How to use the plugin
             {opts, [                      % list of options understood by the plugin
-                    {idl_opts, $g, "idl_opts", [], "General IDL options."},
-                    {idl_paths, $f, "idl_paths", [], "A list of IDL files or directories."}
+                    {idl_opts, $g, "idl_opts", undefined, "General IDL options."},
+                    {idl_paths, $f, "idl_paths", undefined, "A list of IDL files or directories."}
                    ]},
             {short_desc, "Rebar3 IDL Compiler"},
             {desc, "This is a plugin for compiling Erlang IDL files using Rebar3."}
@@ -85,9 +85,10 @@ format_error(Reason) ->
 %%% ===================================================================
 get_idl_files(State) ->
     {Args, _} = rebar_state:command_parsed_args(State),
-    GeneralOpts = proplists:get_value(idl_opts, Args),
+    GeneralOpts = get_general_options(proplists:get_value(idl_opts, Args)),
+    PathOptions = get_files(proplists:get_value(idl_paths, Args)),
     lists:flatten(
-      [case PathOptions of
+      [case PathOption of
            {file, _FilePath, _Opts} = File ->
                File;
            {file, FilePath} ->
@@ -99,7 +100,7 @@ get_idl_files(State) ->
                [{file, FilePath, GeneralOpts}
                 || FilePath <- filelib:wildcard(DirPath ++ "/*.idl")]
        end
-       || PathOptions <- proplists:get_value(idl_paths, Args)]).
+       || PathOption <- PathOptions]).
 
 %%% ===================================================================
 %%% compile_idl_file/1
@@ -123,3 +124,18 @@ compile_idl_file({file, Path, Opts}) ->
             error
     end.
 
+%%% ===================================================================
+%%% Help functions
+%%% ===================================================================
+-spec get_general_options(undefined | list()) -> list().
+-spec get_files(undefined | list()) -> list().
+
+get_general_options(undefined) ->
+    [];
+get_general_options(Opts) ->
+    Opts.
+
+get_files(undefined) ->
+    [];
+get_files(Files) ->
+    Files.
