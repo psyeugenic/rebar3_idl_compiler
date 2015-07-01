@@ -4,5 +4,5 @@ module system
   interface Test
   {
     void dropTheBass();
-  }
-}
+  };
+};

@@ -1,5 +1,4 @@
 -module('rebar3_idl_compiler').
--behaviour(provider).
 
 %%% ===================================================================
 %%% General
@@ -52,10 +51,8 @@ init(State) ->
             {bare, true},                 % The task can be run by the user, always true
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 rebar3_idl_compiler"}, % How to use the plugin
-            {opts, [                      % list of options understood by the plugin
-                    {idl_opts, $g, "idl_opts", undefined, "General IDL options."},
-                    {idl_paths, $f, "idl_paths", undefined, "A list of IDL files or directories."}
-                   ]},
+            {opts, [                      % list of command-line options
+                   ]},                    % understood by the plugin
             {short_desc, "Rebar3 IDL Compiler"},
             {desc, "This is a plugin for compiling Erlang IDL files using Rebar3."}
     ]),
@@ -84,23 +81,21 @@ format_error(Reason) ->
 %%%       Returns a list of {file, Path, Opts} for each file specified.
 %%% ===================================================================
 get_idl_files(State) ->
-    {Args, _} = rebar_state:command_parsed_args(State),
-    GeneralOpts = get_general_options(proplists:get_value(idl_opts, Args)),
-    PathOptions = get_files(proplists:get_value(idl_paths, Args)),
-    lists:flatten(
-      [case PathOption of
-           {file, _FilePath, _Opts} = File ->
-               File;
-           {file, FilePath} ->
-               {file, FilePath, GeneralOpts};
-           {dir, DirPath, Opts} ->
-               [{file, FilePath, Opts}
-                || FilePath <- filelib:wildcard(DirPath ++ "/*.idl")];
-           {dir, DirPath} ->
-               [{file, FilePath, GeneralOpts}
-                || FilePath <- filelib:wildcard(DirPath ++ "/*.idl")]
-       end
-       || PathOption <- PathOptions]).
+    GeneralOpts = rebar_state:get(State, idl_opts, []),
+    PathOptions = rebar_state:get(State, idl_paths, []),
+    io:format("Got options: Path: ~p,~n          General: ~p~n", [PathOptions, GeneralOpts]),
+    ListOfFiles = [normalize_file(PathOption, GeneralOpts) || PathOption <- PathOptions],
+    lists:flatten(ListOfFiles).
+
+normalize_file({file, FilePath, Opts}, _GeneralOpts) ->
+    [{file, FilePath, Opts}];
+normalize_file({file, FilePath}, GeneralOpts) ->
+    [{file, FilePath, GeneralOpts}];
+normalize_file({dir, DirPath, Opts}, _GeneralOpts) ->
+    [{file, FilePath, Opts} || FilePath <- filelib:wildcard(DirPath ++ "/*.idl")];
+normalize_file({dir, DirPath}, GeneralOpts) ->
+    [{file, FilePath, GeneralOpts} || FilePath <- filelib:wildcard(DirPath ++ "/*.idl")].
+
 
 %%% ===================================================================
 %%% compile_idl_file/1
@@ -127,15 +122,3 @@ compile_idl_file({file, Path, Opts}) ->
 %%% ===================================================================
 %%% Help functions
 %%% ===================================================================
--spec get_general_options(undefined | list()) -> list().
--spec get_files(undefined | list()) -> list().
-
-get_general_options(undefined) ->
-    [];
-get_general_options(Opts) ->
-    Opts.
-
-get_files(undefined) ->
-    [];
-get_files(Files) ->
-    Files.
