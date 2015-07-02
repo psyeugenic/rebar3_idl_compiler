@@ -1,0 +1,5 @@
+module svedeeshChef {
+  interface bork {
+    long borkbork();
+  };
+};

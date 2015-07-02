@@ -1,0 +1,68 @@
+// DB IDL from http://www.erlang.org/doc/apps/orber/ch_idl_to_erlang_mapping.html
+#ifndef _DB_IDL_
+#define _DB_IDL_
+// ++ topmost scope ++ 
+// IC generates oe_XX.erl and oe_XX.hrl.
+// XX is equal to the name of the IDL-file.
+// Tips: create one IDL-file for each top module
+// and give the file the same name (DB.idl).
+// The oe_XX.erl module is used to register data
+// in the IFR.
+module DB {
+
+  // ++ Module scope ++
+  // To access 'EmployeeNo' from another scope, use:
+  // DB::EmployeeNo, DB::Access etc.
+  typedef unsigned long EmployeeNo;
+
+  interface CommonUser {
+
+     any lookup(in EmployeeNo ENo);
+
+  };
+
+  interface Administrator : CommonUser {
+
+     void delete(in EmployeeNo ENo);
+
+  };
+
+  enum Department {Department1, Department2};
+
+  // Definitions of this struct is contained in:
+  // DB.hrl
+  // Access functions exported by:
+  // DB_employee.erl
+  struct employee {
+    // ... CUT ...
+    long password;
+  };
+
+  typedef employee EmployeeData;
+
+  // ... CUT ...
+
+  // If this interface should inherit an interface
+  // in another module (e.g. OtherModule) use:
+  // interface Access : OtherModule::OtherInterface
+  interface Access {
+
+      // ++ interface scope ++
+      // Types within this scope is accessible via:
+      // DB::Access::UserID
+      // The Stub/Skeleton for this interface is
+      // placed in the module:
+      // DB_Access.erl
+      typedef string<10> UserID;
+      typedef string<10> Password;
+
+      // Since Administrator inherits from CommonUser
+      // the returned Object can be of either type.
+      // This operation is exported from:
+      // DB_Access.erl
+      CommonUser logon(in UserID ID, in Password PW);
+
+  };
+
+};
+#endif
