@@ -1,14 +1,9 @@
 -module('rebar3_idl_compiler').
-
-%%% ===================================================================
-%%% General
-%%% ===================================================================
+-author('Sebastian Weddmark Olsson <sebastian.weddmark.olsson@ericsson.com>').
+%%% == General ==
 %%% This is a plugin for compiling Erlang IDL files using Rebar3.
 %%%
-%%%
-%%% ===================================================================
-%%% How to use
-%%% ===================================================================
+%%% == How to use ==
 %%% There are two options that can now be specified in your rebar.config:
 %%%
 %%% {idl_paths, [Paths]}.
@@ -42,6 +37,9 @@
 %%% ===================================================================
 %%% Public API
 %%% ===================================================================
+%%%
+%%% These three functions is almost fully generated from the `rebar3' script.
+%%%
 
 -spec init(rebar_state:t()) -> {ok, rebar_state:t()}.
 init(State) ->
@@ -75,10 +73,14 @@ format_error(Reason) ->
     io_lib:format("~p", [Reason]).
 
 %%% ===================================================================
-%%% get_idl_files/1
+%%% Private API
+%%% ===================================================================
+
+%%% ===================================================================
 -spec get_idl_files(rebar_state:t()) -> [{file, string(), list()}].
-%%% Documentation:
-%%%       Returns a list of {file, Path, Opts} for each file specified.
+%%% @doc
+%%%   Returns a list of {file, Path, Opts} for each file specified.
+%%% @end
 %%% ===================================================================
 get_idl_files(State) ->
     GeneralOpts = rebar_state:get(State, idl_opts, []),
@@ -98,11 +100,11 @@ normalize_file({dir, DirPath}, GeneralOpts) ->
 
 
 %%% ===================================================================
-%%% compile_idl_file/1
 -spec compile_idl_file({file, Path::string(), Options::list()}) -> ok | warning | error.
-%%% Documentation:
-%%%       Compile a IDL file with the `ic' module.
-%%%       Check documentation http://www.erlang.org/doc/man/ic.html
+%%% @doc
+%%%   Compile a IDL file with the `ic' module.
+%%%   Check documentation http://www.erlang.org/doc/man/ic.html
+%%% @end
 %%% ===================================================================
 compile_idl_file({file, Path, Opts}) ->
     case ic:gen(Path, Opts) of
@@ -118,7 +120,3 @@ compile_idl_file({file, Path, Opts}) ->
             format_error({error, Warning, Error}),
             error
     end.
-
-%%% ===================================================================
-%%% Help functions
-%%% ===================================================================

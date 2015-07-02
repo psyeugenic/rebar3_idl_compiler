@@ -1,0 +1,51 @@
+@title Rebar3 IDL Compiler
+
+@doc
+<style>
+pre {
+    background-color: #add8e6;
+}
+</style>
+
+== General ==
+<div style="margin-bottom:2em;">
+This is a plugin for compiling Erlang IDL files using Rebar3.
+</div>
+
+== How to use ==
+<div style="margin-bottom:2em;">
+There are two options that can now be specified in your
+<a href="../example/rebar.config">rebar.config</a>:
+
+```
+{idl_paths, [Paths]}.
+
+{idl_opts, [Options]}.
+'''
+
+`Path = {file, FilePath, Options} | {file, FilePath} | {dir, Directory, Options} | {dir, Directory}'
+
+where `Options' is specified by the ic module, check
+[http://www.erlang.org/doc/man/ic.html] for more info.
+
+If the options is not given with the path tuple, then the global `idl_opts'
+option is used. It defaults to `[]'.
+
+=== Example: ===
+
+```
+{idl_opts, [{'Wall', true}]}.
+
+{idl_files, [
+             {file, "idl/system.idl", [{outdir, "generated"}]},
+             {dir, "idlfiles"}
+            ] }.
+'''
+
+
+In the given example, all *.idl-files found under the path
+"app_root/idlfiles" would be compiled with the 'Wall' option, while the
+file "app_root/idl/system.idl" would be compiled into the directory
+"generated".
+</div>
+@end
