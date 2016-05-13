@@ -8,6 +8,6 @@
    ]},
   {env,[]},
   {modules, []},
-  {contributors, ["Sebastian Weddmark Olsson"]},
+  {maintainers, ["Sebastian Weddmark Olsson"]},
   {links, [{"Github", "https://github.com/sebastiw/rebar3_idl_compiler"}]}
  ]}.
