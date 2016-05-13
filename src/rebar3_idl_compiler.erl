@@ -31,6 +31,8 @@
 
 -export([init/1, do/1, format_error/1]).
 
+-export([compile_idl_file/2]).
+
 -define(PROVIDER, 'rebar3_idl_compiler').
 -define(DEPS, [app_discovery]).
 
@@ -59,7 +61,9 @@ init(State) ->
 
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
-    lists:foreach(fun compile_idl_file/1, get_idl_files(State)),
+    IdlFiles = get_idl_files(State),
+    lists:foreach(fun(Idl) -> spawn_link(?MODULE, compile_idl_file, [self(), Idl]) end, IdlFiles),
+    wait_until_finished(length(IdlFiles)),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
@@ -100,23 +104,37 @@ normalize_file({dir, DirPath}, GeneralOpts) ->
 
 
 %%% ===================================================================
--spec compile_idl_file({file, Path::string(), Options::list()}) -> ok | warning | error.
+-spec compile_idl_file(pid(), {file, Path::string(), Options::list()}) -> ok | error | {warning, string()} | {error, list(string()), list(string())}.
 %%% @doc
 %%%   Compile a IDL file with the `ic' module.
 %%%   Check documentation http://www.erlang.org/doc/man/ic.html
 %%% @end
 %%% ===================================================================
-compile_idl_file({file, Path, Opts}) ->
+compile_idl_file(Pid, {file, Path, Opts}) ->
     case ic:gen(Path, Opts) of
         ok ->
-            ok;
+            Pid ! ok;
         error ->
-            format_error(error),
-            error;
+            Pid ! error;
         {ok, [Warning]} ->
-            format_error({warning, Warning}),
-            warning;
+            Pid ! {warning, Warning};
         {error, [Warning], [Error]} ->
-            format_error({error, Warning, Error}),
-            error
+            Pid ! {error, Warning, Error}
     end.
+
+%%% ===================================================================
+-spec wait_until_finished(non_neg_integer()) -> ok.
+%%% @doc
+%%%  It's the finalcount down! Dududu, DUDUDUDU-DU.
+%%% @end
+%%% ===================================================================
+wait_until_finished(0) ->
+    ok;
+wait_until_finished(Left) ->
+    receive
+        ok ->
+            ok;
+        Error ->
+            format_error(Error)
+    end,
+    wait_until_finished(Left-1).
