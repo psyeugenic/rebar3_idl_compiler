@@ -1,5 +1,6 @@
--module('rebar3_idl_compiler').
+-module(rebar3_idl_compiler).
 -author('Sebastian Weddmark Olsson <sebastian.weddmark.olsson@ericsson.com>').
+
 %%% == General ==
 %%% This is a plugin for compiling Erlang IDL files using Rebar3.
 %%%
@@ -31,10 +32,12 @@
 
 -export([init/1, do/1, format_error/1]).
 
+%% Internal
 -export([compile_idl_file/2]).
 
--define(PROVIDER, 'rebar3_idl_compiler').
--define(DEPS, [app_discovery]).
+-define(PROVIDER, compile).
+-define(NAMESPACE, idl).
+-define(DEPS, [{default, app_discovery}]).
 
 %%% ===================================================================
 %%% Public API
@@ -47,10 +50,11 @@
 init(State) ->
     Provider = providers:create([
             {name, ?PROVIDER},            % The 'user friendly' name of the task
+            {namespace, ?NAMESPACE},      % To be able to run 'idl cmd'
             {module, ?MODULE},            % The module implementation of the task
             {bare, true},                 % The task can be run by the user, always true
             {deps, ?DEPS},                % The list of dependencies
-            {example, "rebar3 rebar3_idl_compiler"}, % How to use the plugin
+            {example, "rebar3 idl compile"}, % How to use the plugin
             {opts, [                      % list of command-line options
                    ]},                    % understood by the plugin
             {short_desc, "Rebar3 IDL Compiler"},
@@ -62,8 +66,15 @@ init(State) ->
 -spec do(rebar_state:t()) -> {ok, rebar_state:t()} | {error, string()}.
 do(State) ->
     IdlFiles = get_idl_files(State),
+
+    Cwd = rebar_state:dir(State),
+    Providers = rebar_state:providers(State),
+    rebar_hooks:run_all_hooks(Cwd, pre, {?NAMESPACE, ?PROVIDER}, Providers, State),
+
     lists:foreach(fun(Idl) -> spawn_link(?MODULE, compile_idl_file, [self(), Idl]) end, IdlFiles),
     wait_until_finished(length(IdlFiles)),
+
+    rebar_hooks:run_all_hooks(Cwd, post, {?NAMESPACE, ?PROVIDER}, Providers, State),
     {ok, State}.
 
 -spec format_error(any()) ->  iolist().
