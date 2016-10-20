@@ -1,4 +1,5 @@
--module(rebar3_idl_compiler).
+-module(idl_prv_compile).
+-behaviour(provider).
 -author('Sebastian Weddmark Olsson <sebastian.weddmark.olsson@ericsson.com>').
 
 %%% == General ==
@@ -79,7 +80,7 @@ do(State) ->
 
 -spec format_error(any()) ->  iolist().
 format_error(error) ->
-    io_lib:format("Error: undefined error.");
+    io_lib:format("Error: undefined error.", []);
 format_error({warning, Warning}) ->
     io_lib:format("Warning: ~p", [Warning]);
 format_error({error, Warning, Error}) ->
@@ -100,7 +101,8 @@ format_error(Reason) ->
 get_idl_files(State) ->
     GeneralOpts = rebar_state:get(State, idl_opts, []),
     PathOptions = rebar_state:get(State, idl_paths, []),
-    io:format("Got options: Path: ~p,~n          General: ~p~n", [PathOptions, GeneralOpts]),
+    io:format("Got options: Path: ~p,~n"
+              "          General: ~p~n", [PathOptions, GeneralOpts]),
     ListOfFiles = [normalize_file(PathOption, GeneralOpts) || PathOption <- PathOptions],
     lists:flatten(ListOfFiles).
 

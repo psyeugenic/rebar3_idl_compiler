@@ -1,4 +1,4 @@
-{application, 'rebar3_idl_compiler',
+{application, 'idl',
  [{description, "Rebar3 IDL Compiler"},
   {licenses, ["MIT"]},
   {vsn, "0.5.0"},
