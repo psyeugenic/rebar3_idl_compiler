@@ -69,21 +69,28 @@ remove_idl_dir(State) ->
              end,
     RebarCache = rebar_dir:local_cache_dir(OutDir),
     CacheDir = filename:join([RebarCache, "idl"]),
-    {ok, Files} = file:list_dir_all(CacheDir),
-    NotRemovedFiles = lists:foldl(
-                        fun (File, Acc) ->
-                                case file:delete(filename:join([CacheDir, File])) of
-                                    ok ->
-                                        Acc;
-                                    {error, Reason} ->
-                                        [{error, File, Reason}|Acc]
-                                end
-                        end, [], Files),
-    case NotRemovedFiles of
-        [] ->
-            ok = file:del_dir(CacheDir);
-        _ ->
-            rebar_log:log(error,
-                          "IDL cleaner could not remove some files:~n~p~n",
-                          [NotRemovedFiles])
+    case file:list_dir_all(CacheDir) of
+        {ok, Files} ->
+            LeftFiles = lists:foldl(
+                          fun (File, Acc) ->
+                                  CacheFile = filename:join([CacheDir, File]),
+                                  case file:delete(CacheFile) of
+                                      ok ->
+                                          Acc;
+                                      {error, Reason} ->
+                                          [{error, File, Reason}|Acc]
+                                  end
+                          end, [], Files),
+            case LeftFiles of
+                [] ->
+                    ok = file:del_dir(CacheDir);
+                _ ->
+                    rebar_log:log(error,
+                                  "IDL cleaner could not remove "
+                                  "some files:~n~p~n",
+                                  [LeftFiles])
+            end;
+        {error, enoent} ->
+            %% Directory does not exist
+            ok
     end.
