@@ -2,35 +2,6 @@
 -behaviour(provider).
 -author('Sebastian Weddmark Olsson <sebastian.weddmark.olsson@ericsson.com>').
 
-%%% == General ==
-%%% This is a plugin for compiling Erlang IDL files using Rebar3.
-%%%
-%%% == How to use ==
-%%% There are two options that can now be specified in your rebar.config:
-%%%
-%%% {idl_paths, [Paths]}.
-%%%         Path = {file, FilePath, Options} | {file, FilePath} |
-%%%                {dir, Directory, Options} | {dir, Directory}
-%%% {idl_opts, [Options]}.
-%%%         Options: Options specified by the ic module, check
-%%%                  http://www.erlang.org/doc/man/ic.html for more info.
-%%%
-%%% If the options is not given with the path tuple, then the idl_opts option
-%%% is used.
-%%%
-%%% Example:
-%%%     {idl_opts, [{'Wall', true}]}.
-%%%     {idl_files, [
-%%%                  {file, "idl/system.idl", [{outdir, "generated"}]},
-%%%                  {dir, "idlfiles"}
-%%%                  ]}.
-%%%
-%%% In the given example, all *.idl-files found under the path
-%%% "app_root/idlfiles" would be compiled with the 'Wall' option, while the
-%%% file "app_root/idl/system.idl" would be compiled into the directory
-%%% "generated".
-%%%
-
 -export([init/1, do/1, format_error/1]).
 
 -define(PROVIDER, clean).
@@ -50,13 +21,13 @@ init(State) ->
             {name, ?PROVIDER},            % The 'user friendly' name of the task
             {namespace, ?NAMESPACE},      % To be able to run 'idl cmd'
             {module, ?MODULE},            % The module implementation of the task
-            {bare, true},                 % The task can be run by the user, always true
+            {bare, true},                 % The task can be run by the user
             {deps, ?DEPS},                % The list of dependencies
             {example, "rebar3 idl clean"}, % How to use the plugin
             {opts, [                      % list of command-line options
                    ]},                    % understood by the plugin
-            {short_desc, "Rebar3 IDL Compiler"},
-            {desc, "This is a plugin for compiling Erlang IDL files using Rebar3."}
+            {short_desc, "IDL Compiler"},
+            {desc, "This is a plugin for cleaning Erlang IDL files."}
     ]),
     {ok, rebar_state:add_provider(State, Provider)}.
 
@@ -68,6 +39,7 @@ do(State) ->
     rebar_hooks:run_all_hooks(Cwd, pre, {?NAMESPACE, ?PROVIDER}, Providers, State),
 
     %% Do clean
+    remove_idl_dir(State),
 
     rebar_hooks:run_all_hooks(Cwd, post, {?NAMESPACE, ?PROVIDER}, Providers, State),
     {ok, State}.
@@ -79,3 +51,39 @@ format_error(Reason) ->
 %%% ===================================================================
 %%% Private API
 %%% ===================================================================
+
+%%% ===================================================================
+-spec remove_idl_dir(rebar_state:t()) -> string().
+%%% @doc
+%%%  Removes the cache directory "idl".
+%%% @end
+%%% ===================================================================
+remove_idl_dir(State) ->
+    CurrentApp = rebar_state:current_app(State),
+    OutDir = case CurrentApp /= undefined of
+                 true ->
+                     rebar_app_info:out_dir(CurrentApp);
+                 false ->
+                     [ProjectApp1|_] = rebar_state:project_apps(State),
+                     rebar_app_info:out_dir(ProjectApp1)
+             end,
+    RebarCache = rebar_dir:local_cache_dir(OutDir),
+    CacheDir = filename:join([RebarCache, "idl"]),
+    {ok, Files} = file:list_dir_all(CacheDir),
+    NotRemovedFiles = lists:foldl(
+                        fun (File, Acc) ->
+                                case file:delete(filename:join([CacheDir, File])) of
+                                    ok ->
+                                        Acc;
+                                    {error, Reason} ->
+                                        [{error, File, Reason}|Acc]
+                                end
+                        end, [], Files),
+    case NotRemovedFiles of
+        [] ->
+            ok = file:del_dir(CacheDir);
+        _ ->
+            rebar_log:log(error,
+                          "IDL cleaner could not remove some files:~n~p~n",
+                          [NotRemovedFiles])
+    end.

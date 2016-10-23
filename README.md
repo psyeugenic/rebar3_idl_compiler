@@ -3,30 +3,30 @@ rebar3_idl_compiler
 
 This is a plugin for compiling Erlang IDL files using Rebar3.
 
-Build
------
-
-    $ rebar3 compile
-
 Use
 ---
 
 Add the plugin to your rebar config:
 
+
     {plugins, [
-        { rebar3_idl_compiler, ".*", {git, "git@github.com:sebastiw/rebar3_idl_compiler.git", {tag, "0.1.0"}}}
+        {idl, ".*",
+         {git,
+          "git@github.com:sebastiw/rebar3_idl_compiler.git",
+          {branch, "master"}}}
     ]}.
+
 
 Then just call your plugin directly in an existing application:
 
 
-    $ rebar3 rebar3_idl_compiler
-    ===> Fetching rebar3_idl_compiler
-    ===> Compiling rebar3_idl_compiler
+    $ rebar3 idl compile
+    ===> Fetching idl ({git ...})
+    ===> Compiling idl
     <Plugin Output>
 
 
-There are two options that can now be specified in your rebar.config:
+There are two options that can be specified in your rebar.config:
 
 
     {idl_paths, [Paths]}.
