@@ -48,15 +48,18 @@ do(State) ->
                               {?NAMESPACE, ?PROVIDER},
                               Providers, State),
 
-    NewIdlFiles = lists:filter(fun ({file, Idl, _}) ->
-                                       is_changed(CacheDir, Idl)
-                               end, IdlFiles),
-
+%    NewIdlFiles = lists:filter(fun ({file, Idl, _}) ->
+%                                       is_changed(CacheDir, Idl)
+%                               end, IdlFiles),
     lists:foreach(fun(Idl) ->
-                          spawn_link(?MODULE, compile_idl_file,
-                                     [CacheDir, self(), Idl])
-                  end, NewIdlFiles),
-    wait_until_finished(length(NewIdlFiles)),
+                          compile_idl_file(CacheDir, self(), Idl)
+                  end, IdlFiles),
+
+%    lists:foreach(fun(Idl) ->
+%                          spawn_link(?MODULE, compile_idl_file,
+%                                     [CacheDir, self(), Idl])
+%                  end, NewIdlFiles),
+    wait_until_finished(length(IdlFiles)),
 
     rebar_hooks:run_all_hooks(Cwd, post,
                               {?NAMESPACE, ?PROVIDER},
@@ -169,19 +172,21 @@ update_cache_file(CacheDir, IdlPath) ->
     end.
 
 %%% ===================================================================
--spec is_changed(CacheDir::string(), Path::string()) -> boolean().
-%%% @doc
-%%%  Check if there exist a cache file that is newer than the IDL file.
-%%%  If it does, we don't need to compile this IDL file.
-%%% @end
-%%% ===================================================================
-is_changed(CacheDir, IdlPath) ->
-    IdlLastMod = filelib:last_modified(IdlPath),
-    CacheFileName = get_cache_filename(CacheDir, IdlPath),
-    CacheLastMod = filelib:last_modified(CacheFileName),
-
-    %% Is Cache older or newer than IDL file (and does it exist)
-    CacheLastMod /= IdlLastMod.
+%-spec is_changed(CacheDir::string(), Path::string()) -> boolean().
+%%%% @doc
+%%%%  Check if there exist a cache file that is newer than the IDL file.
+%%%%  If it does, we don't need to compile this IDL file.
+%%%% @end
+%%%% ===================================================================
+%is_changed(CacheDir, IdlPath) ->
+%    erlang:display({is_changed, CacheDir, IdlPath}),
+%%    IdlLastMod = filelib:last_modified(IdlPath),
+%%    CacheFileName = get_cache_filename(CacheDir, IdlPath),
+%%    CacheLastMod = filelib:last_modified(CacheFileName),
+%%
+%%    %% Is Cache older or newer than IDL file (and does it exist)
+%%    CacheLastMod /= IdlLastMod,
+%    true.
 
 %%% ===================================================================
 -spec get_cache_filename(CacheDir::string(), IdlPath::string()) -> string().
