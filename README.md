@@ -46,10 +46,8 @@ Example:
 
 
     {idl_opts, [{'Wall', true}]}.
-    {idl_files, [
-                 {file, "idl/system.idl", [{outdir, "generated"}]},
-                 {dir, "idlfiles"}
-                 ]}.
+    {idl_paths, [{file, "idl/system.idl", [{outdir, "generated"}]},
+                 {dir, "idlfiles"}]}.
 
 
 In the given example, all *.idl-files found under the path
