@@ -36,7 +36,7 @@ option is used. It defaults to `[]'.
 ```
 {idl_opts, [{'Wall', true}]}.
 
-{idl_files, [
+{idl_paths, [
              {file, "idl/system.idl", [{outdir, "generated"}]},
              {dir, "idlfiles"}
             ] }.
