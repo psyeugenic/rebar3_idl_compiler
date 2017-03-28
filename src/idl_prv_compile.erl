@@ -5,7 +5,7 @@
 -export([init/1, do/1, format_error/1]).
 
 %% Internal
--export([compile_idl_file/3]).
+-export([compile_idl_file/4]).
 
 -define(PROVIDER, compile).
 -define(NAMESPACE, idl).
@@ -48,18 +48,27 @@ do(State) ->
                               {?NAMESPACE, ?PROVIDER},
                               Providers, State),
 
-%    NewIdlFiles = lists:filter(fun ({file, Idl, _}) ->
-%                                       is_changed(CacheDir, Idl)
-%                               end, IdlFiles),
-    lists:foreach(fun(Idl) ->
-                          compile_idl_file(CacheDir, self(), Idl)
-                  end, IdlFiles),
+    Apps = case rebar_state:current_app(State) of
+               undefined ->
+                   rebar_state:project_apps(State);
+               AppInfo ->
+                   [AppInfo]
+           end,
+    lists:foreach(fun(AppInfo) ->
+                          Dir = rebar_app_info:dir(AppInfo),
+                      %    NewIdlFiles = lists:filter(fun ({file, Idl, _}) ->
+                      %                                       is_changed(CacheDir, Idl)
+                      %                               end, IdlFiles),
+                      lists:foreach(fun(Idl) ->
+                                            compile_idl_file(CacheDir, Dir, self(), Idl)
+                                    end, IdlFiles),
 
-%    lists:foreach(fun(Idl) ->
-%                          spawn_link(?MODULE, compile_idl_file,
-%                                     [CacheDir, self(), Idl])
-%                  end, NewIdlFiles),
-    wait_until_finished(length(IdlFiles)),
+                      %    lists:foreach(fun(Idl) ->
+                      %                          spawn_link(?MODULE, compile_idl_file,
+                      %                                     [CacheDir, Dir, self(), Idl])
+                      %                  end, NewIdlFiles),
+                      wait_until_finished(length(IdlFiles))
+                  end, Apps),
 
     rebar_hooks:run_all_hooks(Cwd, post,
                               {?NAMESPACE, ?PROVIDER},
@@ -125,6 +134,7 @@ create_cache_dir(State) ->
 
 %%% ===================================================================
 -spec compile_idl_file(CacheDir::string(),
+                       Dir :: string(),
                        pid(),
                        {file, Path::string(), Options::list()}) ->
                               ok | {warning, string()}
@@ -135,7 +145,10 @@ create_cache_dir(State) ->
 %%%  Check documentation http://www.erlang.org/doc/man/ic.html
 %%% @end
 %%% ===================================================================
-compile_idl_file(CacheDir, Pid, {file, Path, Opts}) ->
+compile_idl_file(CacheDir, Dir, Pid, {file, Path0, Opts0}) ->
+    Path = filename:join(Dir,Path0),
+    Opts = lists:map(fun({outdir, Out}) -> {outdir, filename:join(Dir, Out)}; (I) -> I end, Opts0),
+
     rebar_log:log(debug, "Compiling ~p with options ~p~n", [Path, Opts]),
     case ic:gen(Path, Opts) of
         ok ->
